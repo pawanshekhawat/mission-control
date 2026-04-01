@@ -137,8 +137,13 @@ function pickDestination(agentIdx: number): THREE.Vector3 {
 }
 
 const HAIR_COLORS: Record<string, string> = {
-  Ethan:"#4a1a7a", Lucas:"#1a3a7a", Sophia:"#0a5a3a",
-  Noah:"#7a5a10", Michael:"#7a1a1a", Olivia:"#7a4a10", William:"#3a3a7a",
+  Ethan:   "#8b5cf6", // purple
+  Lucas:   "#3b82f6", // blue
+  Sophia:  "#10b981", // green
+  Noah:   "#f59e0b", // yellow
+  Michael: "#ef4444", // red
+  Olivia:  "#f97316", // orange
+  William: "#6366f1", // indigo
 };
 const SKIN = "#D4956A";
 
