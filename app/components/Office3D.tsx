@@ -14,14 +14,11 @@ type AgentGlobalState = {
   position: THREE.Vector3;
   target: THREE.Vector3;
   state: "idle" | "walking" | "arrived";
-  idleUntil: number;
-  timer: number;
+  idleUntil: number; // Unix time (seconds) when idle ends. -1 = first-time not started yet
+  timer: number;      // seconds until first move
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const WALL_HEIGHT = 10;
-const ROOM_WIDTH  = 24;
-const ROOM_DEPTH  = 20;
 const MOVE_SPEED  = 1.5;
 const ARRIVE_THRESHOLD = 0.3;
 const REPULSION_RADIUS = 1.5;
@@ -50,24 +47,24 @@ const AGENTS_META: AgentData[] = [
   { name: "William", emoji: "⚙️", color: "#6366f1", role: "Ops",          pos: [4, 0, 8.5]  },
 ];
 
-// Shared module-level state (one per agent, shared across all instances)
+// Shared module-level state — one entry per agent
 const globalPositions: THREE.Vector3[] = AGENTS_META.map(a => new THREE.Vector3(...a.pos));
 
 const agentStates: AgentGlobalState[] = AGENTS_META.map((a) => ({
   position: new THREE.Vector3(...a.pos),
   target:   new THREE.Vector3(...a.pos),
   state:    "idle" as const,
-  idleUntil: Infinity, // will be set on first frame
-  timer:    Math.random() * 5 + 4, // 4-9 sec before first move
+  idleUntil: -1,              // -1 = not started, set on first frame
+  timer:    4 + Math.random() * 5, // 4-9 sec
 }));
 
-// Furniture collision boxes
+// ─── Furniture collision boxes ─────────────────────────────────────────────────
 const FURNITURE_BOXES = [
   { min: new THREE.Vector3(-3.8, 0, -3.8), max: new THREE.Vector3(3.8, 4.4, 3.8) },  // War room
-  { min: new THREE.Vector3(-11.5, 0, -9),   max: new THREE.Vector3(-10.3, 5, -5.2) }, // Server rack
-  { min: new THREE.Vector3(8, 0, -9.2),     max: new THREE.Vector3(10, 3, -8) },      // Coffee counter
-  { min: new THREE.Vector3(8, 0, 5),         max: new THREE.Vector3(11, 4.5, 7) },      // TV lounge
-  { min: new THREE.Vector3(-10, 0, -9),      max: new THREE.Vector3(-6, 3, -6) },       // Ping pong
+  { min: new THREE.Vector3(-11.5, 0, -9),  max: new THREE.Vector3(-10.3, 5, -5.2) }, // Server rack
+  { min: new THREE.Vector3(8, 0, -9.2),    max: new THREE.Vector3(10, 3, -8)     },  // Coffee counter
+  { min: new THREE.Vector3(8, 0, 5),       max: new THREE.Vector3(11, 4.5, 7)    },  // TV lounge
+  { min: new THREE.Vector3(-10, 0, -9.5),  max: new THREE.Vector3(-6, 3, -5.5)  },  // Ping pong
 ];
 
 function isInsideFurniture(p: THREE.Vector3): boolean {
@@ -78,7 +75,7 @@ function isInsideFurniture(p: THREE.Vector3): boolean {
 }
 
 function pickValidDest(agentIdx: number): THREE.Vector3 {
-  for (let attempts = 0; attempts < 30; attempts++) {
+  for (let attempt = 0; attempt < 30; attempt++) {
     const r = Math.random();
     let dest: THREE.Vector3;
 
@@ -93,18 +90,24 @@ function pickValidDest(agentIdx: number): THREE.Vector3 {
       dest = new THREE.Vector3(poi[0], 0, poi[2]);
     } else {
       const dp = AGENTS_META[agentIdx].pos;
-      dest = new THREE.Vector3(dp[0] + (Math.random() - 0.5) * 2, 0, dp[2] + (Math.random() - 0.5) * 2);
+      dest = new THREE.Vector3(
+        dp[0] + (Math.random() - 0.5) * 2,
+        0,
+        dp[2] + (Math.random() - 0.5) * 2
+      );
     }
 
-    if (!isInsideFurniture(dest) &&
-        dest.x > BX_MIN && dest.x < BX_MAX &&
-        dest.z > BZ_MIN && dest.z < BZ_MAX) {
+    if (
+      !isInsideFurniture(dest) &&
+      dest.x > BX_MIN && dest.x < BX_MAX &&
+      dest.z > BZ_MIN && dest.z < BZ_MAX
+    ) {
       return dest;
     }
   }
-  // Fallback: desk
-  const d = AGENTS_META[agentIdx].pos;
-  return new THREE.Vector3(d[0] + 1.5, 0, d[2]);
+  // Fallback: walk to a spot near desk
+  const dp = AGENTS_META[agentIdx].pos;
+  return new THREE.Vector3(dp[0] + 2, 0, dp[2]);
 }
 
 const HAIR_COLORS: Record<string, string> = {
@@ -170,28 +173,28 @@ function MinecraftAgent({
     const now = clock.elapsedTime;
     const pos = globalPositions[agentIdx];
 
-    // ── Init timer on very first frame ────────────────────────────────────────
-    if (state.idleUntil === Infinity && now > 0.05) {
-      state.idleUntil = now + state.timer;
+    // ── First-frame initialization ──────────────────────────────────────────
+    if (state.idleUntil < 0) {
+      state.idleUntil = now + state.timer; // start first idle countdown
     }
 
-    // ── State: idle ──────────────────────────────────────────────────────────
+    // ── IDLE state ──────────────────────────────────────────────────────────
     if (state.state === "idle") {
       if (now >= state.idleUntil) {
         state.target.copy(pickValidDest(agentIdx));
         state.state = "walking";
       }
     }
-    // ── State: arrived ───────────────────────────────────────────────────────
+    // ── ARRIVED state ──────────────────────────────────────────────────────
     else if (state.state === "arrived") {
       if (now >= state.idleUntil) {
         state.target.copy(pickValidDest(agentIdx));
         state.state = "walking";
       }
     }
-    // ── State: walking ──────────────────────────────────────────────────────
+    // ── WALKING state ──────────────────────────────────────────────────────
     else if (state.state === "walking") {
-      const dir = state.target.clone().sub(pos);
+      const dir  = state.target.clone().sub(pos);
       const dist = dir.length();
 
       // Agent-agent repulsion
@@ -206,41 +209,42 @@ function MinecraftAgent({
       }
 
       if (dist < ARRIVE_THRESHOLD) {
-        state.state    = "arrived";
-        state.idleUntil = now + 2 + Math.random() * 2; // idle 2-4 sec
-        state.timer     = Math.random() * 6 + 4;        // next move in 4-10 sec
+        // Arrived — switch to idle
+        state.state     = "arrived";
+        state.idleUntil = now + 2 + Math.random() * 2; // idle 2-4 seconds
+        state.timer     = 4 + Math.random() * 6;         // next move in 4-10 seconds
         state.position.copy(state.target);
       } else {
-        const step  = MOVE_SPEED * delta;
-        const move  = dir.clone().normalize().multiplyScalar(Math.min(step, dist)).add(repulsion);
-        const next  = pos.clone().add(move);
-        // Boundary clamp
+        const step = MOVE_SPEED * delta;
+        const move = dir.clone().normalize().multiplyScalar(Math.min(step, dist)).add(repulsion);
+        const next = pos.clone().add(move);
         next.x = Math.max(BX_MIN, Math.min(BX_MAX, next.x));
         next.z = Math.max(BZ_MIN, Math.min(BZ_MAX, next.z));
         state.position.copy(next);
       }
     }
 
-    // ── Apply position ───────────────────────────────────────────────────────
+    // ── Apply position ──────────────────────────────────────────────────────
     groupRef.current.position.copy(state.position);
 
-    // ── Face movement direction ─────────────────────────────────────────────
+    // ── Face direction ──────────────────────────────────────────────────────
     const tDir = state.target.clone().sub(pos);
     if (tDir.length() > 0.1) {
       groupRef.current.rotation.y = Math.atan2(tDir.x, tDir.z);
     }
 
     // ── Limb animation ──────────────────────────────────────────────────────
-    const moving = state.state === "walking";
-    const swing  = moving ? Math.sin(now * 6) * 0.4 : 0;
-    const lSwing  = moving ? -Math.sin(now * 6) * 0.35 : 0;
+    const walking = state.state === "walking";
+    const swing   = walking ? Math.sin(now * 6) * 0.4 : 0;
+    const lSwing  = walking ? -Math.sin(now * 6) * 0.35 : 0;
+
     if (armLRef.current) armLRef.current.rotation.x = swing;
     if (armRRef.current) armRRef.current.rotation.x = -swing;
     if (legLRef.current) legLRef.current.rotation.x = lSwing;
     if (legRRef.current) legRRef.current.rotation.x = -lSwing;
 
     // Idle bob
-    groupRef.current.position.y = state.position.y + (moving ? 0 : Math.sin(now * 1.2) * 0.02);
+    groupRef.current.position.y = state.position.y + (walking ? 0 : Math.sin(now * 1.2) * 0.02);
   });
 
   return (
@@ -255,22 +259,15 @@ function MinecraftAgent({
           <meshStandardMaterial color={agentData.color} emissive={new THREE.Color(agentData.color)} emissiveIntensity={1} />
         </mesh>
       )}
-      {/* Head */}
       <mesh position={[0,1.8,0]} castShadow><boxGeometry args={[0.5,0.5,0.5]} /><meshStandardMaterial color={SKIN_COLOR} /></mesh>
-      {/* Hair */}
       <mesh position={[0,2.1,0]} castShadow><boxGeometry args={[0.52,0.15,0.52]} /><meshStandardMaterial color={hairColor} /></mesh>
-      {/* Eyes */}
       <mesh position={[-0.1,1.85,0.26]}><boxGeometry args={[0.08,0.08,0.02]} /><meshStandardMaterial color="#ffffff" /></mesh>
       <mesh position={[0.1,1.85,0.26]}><boxGeometry args={[0.08,0.08,0.02]} /><meshStandardMaterial color="#ffffff" /></mesh>
-      {/* Body */}
       <mesh position={[0,1.15,0]} castShadow><boxGeometry args={[0.6,0.7,0.3]} /><meshStandardMaterial color={agentData.color} /></mesh>
-      {/* Arms */}
       <mesh ref={armLRef} position={[-0.45,1.2,0]} castShadow><boxGeometry args={[0.2,0.65,0.2]} /><meshStandardMaterial color={agentData.color} /></mesh>
       <mesh ref={armRRef} position={[0.45,1.2,0]} castShadow><boxGeometry args={[0.2,0.65,0.2]} /><meshStandardMaterial color={agentData.color} /></mesh>
-      {/* Legs */}
       <mesh ref={legLRef} position={[-0.15,0.65,0]} castShadow><boxGeometry args={[0.25,0.55,0.25]} /><meshStandardMaterial color={agentData.color} /></mesh>
       <mesh ref={legRRef} position={[0.15,0.65,0]} castShadow><boxGeometry args={[0.25,0.55,0.25]} /><meshStandardMaterial color={agentData.color} /></mesh>
-      {/* Name tag */}
       <Text position={[0,2.6,0]} fontSize={0.2} color={agentData.color} anchorX="center" anchorY="middle">
         {agentData.emoji} {agentData.name}
       </Text>
@@ -281,7 +278,7 @@ function MinecraftAgent({
   );
 }
 
-// ─── Agent Info Popup ─────────────────────────────────────────────────────────
+// ─── Popup ────────────────────────────────────────────────────────────────────
 function AgentPopup({ agentIdx, onClose }: { agentIdx: number; onClose: () => void }) {
   const agent = AGENTS_META[agentIdx];
   const state = agentStates[agentIdx];
@@ -300,22 +297,25 @@ function AgentPopup({ agentIdx, onClose }: { agentIdx: number; onClose: () => vo
   });
 
   return (
-    <div
-      style={{
-        position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-        zIndex: 50, background: "rgba(17,17,39,0.97)", backdropFilter: "blur(16px)",
-        border: `2px solid ${agent.color}60`, borderRadius: "16px",
-        padding: "24px", width: "300px",
-        boxShadow: `0 0 40px ${agent.color}40`, color: "#fff",
-        fontFamily: "system-ui, sans-serif",
-      }}
+    <div style={{
+      position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+      zIndex: 50, background: "rgba(17,17,39,0.97)", backdropFilter: "blur(16px)",
+      border: `2px solid ${agent.color}60`, borderRadius: "16px",
+      padding: "24px", width: "300px", boxShadow: `0 0 40px ${agent.color}40`,
+      color: "#fff", fontFamily: "system-ui, sans-serif",
+    }}
       onClick={e => e.stopPropagation()}
     >
-      <button onClick={onClose} style={{ position:"absolute",top:12,right:12,background:"transparent",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"18px" }}>✕</button>
+      <button onClick={onClose} style={{
+        position:"absolute",top:12,right:12,background:"transparent",
+        border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"18px",
+      }}>✕</button>
       <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px" }}>
-        <div style={{ width:48,height:48,borderRadius:12,background:`${agent.color}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,border:`1px solid ${agent.color}40` }}>
-          {agent.emoji}
-        </div>
+        <div style={{
+          width:48,height:48,borderRadius:12,
+          background:`${agent.color}20`,display:"flex",alignItems:"center",
+          justifyContent:"center",fontSize:24,border:`1px solid ${agent.color}40`,
+        }}>{agent.emoji}</div>
         <div>
           <div style={{ fontSize:18,fontWeight:700,color:"#fff" }}>{agent.name}</div>
           <div style={{ fontSize:13,color:agent.color }}>{agent.role}</div>
@@ -323,7 +323,11 @@ function AgentPopup({ agentIdx, onClose }: { agentIdx: number; onClose: () => vo
       </div>
       <div style={{ marginBottom:12 }}>
         <div style={{ fontSize:11,color:"#6b7280",marginBottom:4 }}>STATUS</div>
-        <span style={{ fontSize:12,padding:"3px 10px",borderRadius:20,background: status==="working"?"#10b98120":"#f59e0b20", color: status==="working"?"#10b981":"#f59e0b" }}>
+        <span style={{
+          fontSize:12,padding:"3px 10px",borderRadius:20,
+          background: status==="working"?"#10b98120":"#f59e0b20",
+          color: status==="working"?"#10b981":"#f59e0b",
+        }}>
           {status === "working" ? "🟢 Working" : "🟡 Idle"}
         </span>
       </div>
@@ -339,7 +343,7 @@ function AgentPopup({ agentIdx, onClose }: { agentIdx: number; onClose: () => vo
   );
 }
 
-// ─── Header Bar ──────────────────────────────────────────────────────────────
+// ─── Header ──────────────────────────────────────────────────────────────────
 function HeaderBar({ working, idle }: { working: number; idle: number }) {
   return (
     <div style={{
@@ -358,32 +362,30 @@ function HeaderBar({ working, idle }: { working: number; idle: number }) {
         <span style={{ fontSize:12,color:"#10b981" }}>🟢 Working {working}</span>
         <span style={{ fontSize:12,color:"#f59e0b" }}>🟡 Idle {idle}</span>
       </div>
-      <div style={{ background:"#8b5cf6",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600,color:"#fff" }}>
+      <div style={{
+        background:"#8b5cf6",borderRadius:20,
+        padding:"2px 10px",fontSize:12,fontWeight:600,color:"#fff",
+      }}>
         {working+idle} agents
       </div>
     </div>
   );
 }
 
-// ─── Office Room (transparent outer walls) ────────────────────────────────────
+// ─── Office Room ─────────────────────────────────────────────────────────────
 function OfficeRoom() {
   const wallMat = { color:"#EEEADF", transparent:true, opacity:0.35, side:2 } as const;
   return (
     <group>
-      {/* Floor */}
       <mesh rotation={[-Math.PI/2,0,0]} position={[0,0,0]} receiveShadow>
-        <planeGeometry args={[ROOM_WIDTH, ROOM_DEPTH]} />
+        <planeGeometry args={[24, 20]} />
         <meshStandardMaterial color="#F5F0E8" />
       </mesh>
-      <gridHelper args={[Math.max(ROOM_WIDTH,ROOM_DEPTH),24,"#d4cfc5","#d4cfc5"]} position={[0,0.01,0]} />
-      {/* Back wall */}
-      <mesh position={[0,WALL_HEIGHT/2,-ROOM_DEPTH/2]}><planeGeometry args={[ROOM_WIDTH,WALL_HEIGHT]} /><meshStandardMaterial {...wallMat} /></mesh>
-      {/* Front wall */}
-      <mesh position={[0,WALL_HEIGHT/2, ROOM_DEPTH/2]} rotation={[0,Math.PI,0]}><planeGeometry args={[ROOM_WIDTH,WALL_HEIGHT]} /><meshStandardMaterial {...wallMat} /></mesh>
-      {/* Left wall */}
-      <mesh position={[-ROOM_WIDTH/2,WALL_HEIGHT/2,0]} rotation={[0,Math.PI/2,0]}><planeGeometry args={[ROOM_DEPTH,WALL_HEIGHT]} /><meshStandardMaterial {...wallMat} /></mesh>
-      {/* Right wall */}
-      <mesh position={[ ROOM_WIDTH/2,WALL_HEIGHT/2,0]} rotation={[0,-Math.PI/2,0]}><planeGeometry args={[ROOM_DEPTH,WALL_HEIGHT]} /><meshStandardMaterial {...wallMat} /></mesh>
+      <gridHelper args={[24, 24, "#d4cfc5", "#d4cfc5"]} position={[0,0.01,0]} />
+      <mesh position={[0,5,-10]}><planeGeometry args={[24,10]} /><meshStandardMaterial {...wallMat} /></mesh>
+      <mesh position={[0,5, 10]} rotation={[0,Math.PI,0]}><planeGeometry args={[24,10]} /><meshStandardMaterial {...wallMat} /></mesh>
+      <mesh position={[-12,5,0]} rotation={[0,Math.PI/2,0]}><planeGeometry args={[20,10]} /><meshStandardMaterial {...wallMat} /></mesh>
+      <mesh position={[ 12,5,0]} rotation={[0,-Math.PI/2,0]}><planeGeometry args={[20,10]} /><meshStandardMaterial {...wallMat} /></mesh>
     </group>
   );
 }
@@ -453,7 +455,7 @@ function ServerRack({ position }: { position:[number,number,number] }) {
   );
 }
 
-// ─── Coffee Station ───────────────────────────────────────────────────────────
+// ─── Coffee Station ─────────────────────────────────────────────────────────
 function CoffeeStation({ position }: { position:[number,number,number] }) {
   return (
     <group position={position}>
@@ -574,7 +576,9 @@ function CeilingLights() {
 }
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
-function Scene({ selectedAgent, onSelectAgent }: { selectedAgent: number|null; onSelectAgent: (idx: number|null) => void }) {
+function Scene({ selectedAgent, onSelectAgent }: {
+  selectedAgent: number|null; onSelectAgent: (idx: number|null) => void;
+}) {
   return (
     <>
       <color attach="background" args={["#000000"]} />
@@ -582,7 +586,8 @@ function Scene({ selectedAgent, onSelectAgent }: { selectedAgent: number|null; o
       <OfficeRoom />
       {AGENTS_META.map(a => <AgentDesk key={a.name} agent={a} position={a.pos} />)}
       {AGENTS_META.map((a, i) => (
-        <MinecraftAgent key={a.name} agentIdx={i} agentData={a} onSelect={onSelectAgent} isSelected={selectedAgent===i} />
+        <MinecraftAgent key={a.name} agentIdx={i} agentData={a}
+          onSelect={onSelectAgent} isSelected={selectedAgent===i} />
       ))}
       <WarRoom />
       <ServerRack position={[-10.9,0,-6]} />
@@ -597,7 +602,8 @@ function Scene({ selectedAgent, onSelectAgent }: { selectedAgent: number|null; o
       <Plant position={[11,0,9]} />
       <CeilingLights />
       <ambientLight intensity={0.35} color="#ffffff" />
-      <directionalLight position={[10,15,-5]} intensity={0.6} color="#fff5e6" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+      <directionalLight position={[10,15,-5]} intensity={0.6} color="#fff5e6" castShadow
+        shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
       <pointLight position={[-6,8,-4]} intensity={0.25} color="#fff5e6" />
       <pointLight position={[6,8,-4]} intensity={0.25} color="#fff5e6" />
       <pointLight position={[-6,8,4]} intensity={0.25} color="#fff5e6" />
@@ -608,16 +614,16 @@ function Scene({ selectedAgent, onSelectAgent }: { selectedAgent: number|null; o
   );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────────────────────
 export default function Office3D() {
   const [selectedAgent, setSelectedAgent] = useState<number|null>(null);
-
-  const walkingCount = agentStates.filter(s => s.state === "walking").length;
-  const idleCount    = agentStates.filter(s => s.state === "idle" || s.state === "arrived").length;
+  const walking = agentStates.filter(s => s.state === "walking").length;
+  const idle    = agentStates.filter(s => s.state === "idle" || s.state === "arrived").length;
 
   return (
-    <div style={{ width:"100%",height:"100%",position:"relative" }} onClick={() => setSelectedAgent(null)}>
-      <HeaderBar working={walkingCount} idle={idleCount} />
+    <div style={{ width:"100%",height:"100%",position:"relative" }}
+      onClick={() => setSelectedAgent(null)}>
+      <HeaderBar working={walking} idle={idle} />
       <Canvas shadows camera={{ position:[0,18,14], fov:50 }}
         style={{ width:"100%",height:"100%",paddingTop:56 }}
         onClick={() => setSelectedAgent(null)}>
