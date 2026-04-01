@@ -47,7 +47,7 @@ const AGENTS_META: AgentData[] = [
   { name: "William", emoji: "⚙️", color: "#6366f1", role: "Ops",          pos: [4, 0, 8.5]  },
 ];
 
-// Shared module-level state — one entry per agent
+// Shared module-level state - one entry per agent
 const globalPositions: THREE.Vector3[] = AGENTS_META.map(a => new THREE.Vector3(...a.pos));
 
 const agentStates: AgentGlobalState[] = AGENTS_META.map((a) => ({
@@ -62,9 +62,17 @@ const agentStates: AgentGlobalState[] = AGENTS_META.map((a) => ({
 const FURNITURE_BOXES = [
   { min: new THREE.Vector3(-3.8, 0, -3.8), max: new THREE.Vector3(3.8, 4.4, 3.8) },  // War room
   { min: new THREE.Vector3(-11.5, 0, -9),  max: new THREE.Vector3(-10.3, 5, -5.2) }, // Server rack
-  { min: new THREE.Vector3(8, 0, -9.2),    max: new THREE.Vector3(10, 3, -8)     },  // Coffee counter
-  { min: new THREE.Vector3(8, 0, 5),       max: new THREE.Vector3(11, 4.5, 7)    },  // TV lounge
+  { min: new THREE.Vector3(8, 0, -9.2),     max: new THREE.Vector3(10, 3, -8)     },  // Coffee counter
+  { min: new THREE.Vector3(8, 0, 5),        max: new THREE.Vector3(11, 4.5, 7)    },  // TV lounge
   { min: new THREE.Vector3(-10, 0, -9.5),  max: new THREE.Vector3(-6, 3, -5.5)  },  // Ping pong
+  // Desks (walk around, not through)
+  { min: new THREE.Vector3(-2.2, 0, -8.8), max: new THREE.Vector3(2.2, 2, -7.2) },  // Ethan
+  { min: new THREE.Vector3(-10.2, 0, -7.2), max: new THREE.Vector3(-7.8, 2, -4.8) }, // Lucas
+  { min: new THREE.Vector3(-10.2, 0, 3.2), max: new THREE.Vector3(-7.8, 2, 5.6)  }, // Sophia
+  { min: new THREE.Vector3(7.8, 0, -7.2),  max: new THREE.Vector3(10.2, 2, -4.8)  }, // Noah
+  { min: new THREE.Vector3(7.8, 0, 3.2),  max: new THREE.Vector3(10.2, 2, 5.6)   }, // Michael
+  { min: new THREE.Vector3(-5.2, 0, 7.8), max: new THREE.Vector3(-2.8, 2, 9.2)   }, // Olivia
+  { min: new THREE.Vector3(2.8, 0, 7.8),  max: new THREE.Vector3(5.2, 2, 9.2)    }, // William
 ];
 
 function isInsideFurniture(p: THREE.Vector3): boolean {
@@ -214,6 +222,7 @@ function MinecraftAgent({
         state.idleUntil = now + 2 + Math.random() * 2; // idle 2-4 seconds
         state.timer     = 4 + Math.random() * 6;         // next move in 4-10 seconds
         state.position.copy(state.target);
+        globalPositions[agentIdx].copy(state.target); // sync so next walk uses correct position
       } else {
         const step = MOVE_SPEED * delta;
         const move = dir.clone().normalize().multiplyScalar(Math.min(step, dist)).add(repulsion);
@@ -356,7 +365,7 @@ function HeaderBar({ working, idle }: { working: number; idle: number }) {
       <div style={{ display:"flex",alignItems:"center",gap:10 }}>
         <span style={{ fontSize:20 }}>🏢</span>
         <span style={{ fontSize:16,fontWeight:700,color:"#fff" }}>Kailash Command</span>
-        <span style={{ fontSize:13,color:"#6b7280" }}>— Team Office</span>
+        <span style={{ fontSize:13,color:"#6b7280" }}>- Team Office</span>
       </div>
       <div style={{ display:"flex",gap:16,marginLeft:"auto" }}>
         <span style={{ fontSize:12,color:"#10b981" }}>🟢 Working {working}</span>
