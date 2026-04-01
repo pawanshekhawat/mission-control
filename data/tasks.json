@@ -40,7 +40,7 @@
     "agentEmoji": "🧪",
     "agentColor": "#ef4444",
     "priority": "high",
-    "status": "backlog",
+    "status": "in-progress",
     "createdAt": "2026-04-01T08:00:00+05:30"
   },
   {
@@ -51,7 +51,7 @@
     "agentEmoji": "💼",
     "agentColor": "#f97316",
     "priority": "high",
-    "status": "in-progress",
+    "status": "backlog",
     "createdAt": "2026-04-01T12:00:00+05:30"
   },
   {
