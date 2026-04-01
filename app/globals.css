@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Kailash Command Design System */
+  --color-bg-primary: #0a0a14;
+  --color-bg-card: #111127;
+  --color-border: #1e1e3a;
+  --color-accent: #8b5cf6;
+  --color-accent-hover: #7c3aed;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  
+  /* Agent Colors */
+  --color-ethan: #8b5cf6;
+  --color-lucas: #3b82f6;
+  --color-sophia: #10b981;
+  --color-noah: #f59e0b;
+  --color-michael: #ef4444;
+  --color-olivia: #f97316;
+  --color-william: #6366f1;
+
+  --font-sans: system-ui, -apple-system, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }

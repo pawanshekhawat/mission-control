@@ -1,0 +1,68 @@
+[
+  {
+    "id": "1",
+    "title": "Build landing page",
+    "description": "Design and build the main landing page with hero, features, and CTA sections",
+    "agent": "Lucas",
+    "agentEmoji": "🔨",
+    "agentColor": "#3b82f6",
+    "priority": "high",
+    "status": "in-progress",
+    "createdAt": "2026-04-01T10:00:00+05:30"
+  },
+  {
+    "id": "2",
+    "title": "Write LinkedIn post about AI agents",
+    "description": "Thought leadership post on how AI agent teams are changing product development",
+    "agent": "Sophia",
+    "agentEmoji": "✍️",
+    "agentColor": "#10b981",
+    "priority": "medium",
+    "status": "review",
+    "createdAt": "2026-04-01T11:00:00+05:30"
+  },
+  {
+    "id": "3",
+    "title": "Research AI tool trends this week",
+    "description": "Competitive analysis of emerging AI tools and platforms in the developer space",
+    "agent": "Noah",
+    "agentEmoji": "🔭",
+    "agentColor": "#f59e0b",
+    "priority": "low",
+    "status": "completed",
+    "createdAt": "2026-03-31T09:00:00+05:30"
+  },
+  {
+    "id": "4",
+    "title": "Test payment integration",
+    "description": "End-to-end testing of Stripe payment flow including edge cases and error states",
+    "agent": "Michael",
+    "agentEmoji": "🧪",
+    "agentColor": "#ef4444",
+    "priority": "high",
+    "status": "backlog",
+    "createdAt": "2026-04-01T08:00:00+05:30"
+  },
+  {
+    "id": "5",
+    "title": "Follow up with Hostinger brand deal",
+    "description": "Send revised proposal to Hostinger with custom integration pitch",
+    "agent": "Olivia",
+    "agentEmoji": "💼",
+    "agentColor": "#f97316",
+    "priority": "high",
+    "status": "in-progress",
+    "createdAt": "2026-04-01T12:00:00+05:30"
+  },
+  {
+    "id": "6",
+    "title": "Set up nightly backup cron",
+    "description": "Configure automated nightly backups for all mission-control data to cloud storage",
+    "agent": "William",
+    "agentEmoji": "⚙️",
+    "agentColor": "#6366f1",
+    "priority": "medium",
+    "status": "completed",
+    "createdAt": "2026-03-31T15:00:00+05:30"
+  }
+]

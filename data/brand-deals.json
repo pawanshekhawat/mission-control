@@ -1,0 +1,32 @@
+[
+  {
+    "id": "deal-001",
+    "brand": "TechNova",
+    "contact": "ria@technova.in",
+    "type": "Sponsored Reel",
+    "amount": 45000,
+    "status": "negotiating",
+    "dueDate": "2026-04-15",
+    "notes": "Interested in 3-reel package deal"
+  },
+  {
+    "id": "deal-002",
+    "brand": "CloudStack",
+    "contact": "admin@cloudstack.io",
+    "type": "Long-term Partnership",
+    "amount": 150000,
+    "status": "pending",
+    "dueDate": "2026-04-20",
+    "notes": "Annual contract, high value"
+  },
+  {
+    "id": "deal-003",
+    "brand": "ByteWear",
+    "contact": "founder@bytewear.com",
+    "type": "Product Seeding",
+    "amount": 0,
+    "status": "active",
+    "dueDate": "2026-04-10",
+    "notes": "Will send physical products for review"
+  }
+]
