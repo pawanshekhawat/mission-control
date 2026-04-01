@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text } from "@react-three/drei";
-import { Suspense, useRef, useState, useCallback } from "react";
+import { Suspense, useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -285,7 +285,7 @@ function AgentPopup({ agentIdx, onClose }: { agentIdx: number; onClose: () => vo
   const status = state.state === "walking" ? "working" : "idle";
   const [taskInfo, setTaskInfo] = useState({ current: "Loading...", completed: 0 });
 
-  useState(() => {
+  useEffect(() => {
     fetch("/api/tasks")
       .then(r => r.json())
       .then((tasks: { agent: string; status: string; title: string }[]) => {
@@ -294,7 +294,7 @@ function AgentPopup({ agentIdx, onClose }: { agentIdx: number; onClose: () => vo
         setTaskInfo({ current: ip?.title ?? "No active task", completed: at.filter(t => t.status === "completed").length });
       })
       .catch(() => setTaskInfo({ current: "No active task", completed: 0 }));
-  });
+  }, [agent.name]);
 
   return (
     <div style={{
