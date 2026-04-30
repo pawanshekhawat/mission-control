@@ -1,25 +1,28 @@
 {
-  "name": "mission-control-bot",
-  "version": "1.0.0",
-  "description": "Community-driven game request management bot for Discord",
-  "main": "src/index.js",
-  "type": "module",
+  "name": "mission-control",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
-  "keywords": ["discord", "bot", "game-request"],
-  "author": "Pawan Shekhawat",
-  "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^5.10.0",
-    "discord.js": "^14.14.0",
-    "uuid": "^9.0.0"
+    "@hello-pangea/dnd": "^18.0.1",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "next": "16.2.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "three": "^0.183.2"
   },
   "devDependencies": {
-    "prisma": "^5.10.0"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.183.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
