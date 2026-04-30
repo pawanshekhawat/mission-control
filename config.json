@@ -1,0 +1,6 @@
+{
+  "token": "YOUR_DISCORD_BOT_TOKEN",
+  "clientId": "YOUR_DISCORD_CLIENT_ID",
+  "guildId": "YOUR_DISCORD_GUILD_ID",
+  "DATABASE_URL": "postgresql://user:password@localhost:5432/mission_control?schema=public"
+}

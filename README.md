@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎀 Mission Control Bot
 
-## Getting Started
+> Community-driven game request management system for Discord
 
-First, run the development server:
+A bot that lets community members submit game requests (new games, updates, fix requests), vote on them via reactions, and lets admins process top requests into releases. Community priority through upvotes.
 
+---
+
+## 🧱 Tech Stack
+
+| Layer | Choice |
+|-------|--------|
+| Runtime | Node.js 20 LTS |
+| Framework | discord.js v14 |
+| Database | PostgreSQL 15 |
+| ORM | Prisma |
+| Host | AWS EC2 t3.micro |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure
+Edit `config.json`:
+```json
+{
+  "token": "YOUR_DISCORD_BOT_TOKEN",
+  "clientId": "YOUR_DISCORD_CLIENT_ID",
+  "guildId": "YOUR_DISCORD_GUILD_ID",
+  "DATABASE_URL": "postgresql://user:password@localhost:5432/mission_control"
+}
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database setup
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Run
+```bash
+npm run dev   # development (with watch)
+npm start     # production
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 📋 Commands
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | Description |
+|--------|-------------|
+| `/request <game> <link> [comment]` | Submit a new game request |
+| `/update-request <game> [version] [link] [comment]` | Request an update |
+| `/fix-request <game> <issue> [link]` | Report a broken link |
+| `/search <query>` | Search existing requests |
+| `/stats` | View request statistics |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🗂️ Channel Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Create these channels in your Discord server:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `#new-game-requests` — New game submissions
+- `#update-requests` — Update requests
+- `#fix-requests` — Fix requests
+- `#priority` — Live leaderboard (auto-updated)
+- `#new-games-added` — Completed games
+- `#updates-released` — Completed updates
+- `#fixes-done` — Completed fixes
+
+---
+
+## 🔄 Lifecycle
+
+```
+NEW → REVIEW → ACCEPTED → IN_PROGRESS → DONE
+                                           ↘ REJECTED
+```
+
+---
+
+## ⚙️ Admin Controls
+
+Admins can change request status via button interactions on each request card.
+
+---
+
+## 📦 Project Structure
+
+```
+mission-control/
+├── src/
+│   └── index.js          # Main bot file
+├── prisma/
+│   └── schema.prisma    # Database schema
+├── config.json           # Bot configuration
+├── package.json
+└── MISSION.md           # Full project blueprint
+```
+
+---
+
+## 📜 License
+
+ISC — Pawan Shekhawat
